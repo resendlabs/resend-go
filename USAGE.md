@@ -11,23 +11,21 @@ import (
 )
 
 func main() {
-    s := resend.New(resend.WithSecurity(
-        shared.Security{
+    s := resend.New(
+        WithSecurity(        shared.Security{
             BearerAuth: "Bearer YOUR_BEARER_TOKEN_HERE",
-        },
-    ))
-    
-    req := operations.SendEmailRequest{
-        Request: shared.Email{
-            Bcc: "unde",
-            Cc: "deserunt",
-            From: "porro",
-            HTML: "nulla",
-            ReplyTo: "id",
-            Subject: "vero",
-            Text: "perspiciatis",
-            To: "nulla",
-        },
+        }),
+    )
+
+    req := shared.Email{
+        Bcc: "unde",
+        Cc: "deserunt",
+        From: "porro",
+        HTML: "nulla",
+        ReplyTo: "id",
+        Subject: "vero",
+        Text: "perspiciatis",
+        To: "nulla",
     }
 
     ctx := context.Background()

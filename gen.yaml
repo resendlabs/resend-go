@@ -2,11 +2,11 @@ configVersion: 1.0.0
 management:
   docChecksum: 70864ba961d69e4ff7e191e6d9b7401f
   docVersion: 0.1.1
-  speakeasyVersion: 1.8.2
+  speakeasyVersion: 1.11.0
 generation:
   telemetryEnabled: true
   sdkClassName: resend
   sdkFlattening: true
 go:
-  version: 1.3.1
+  version: 1.5.0
   packageName: github.com/resendlabs/resend-go

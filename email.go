@@ -31,11 +31,11 @@ func newEmail(defaultClient, securityClient HTTPClient, serverURL, language, sdk
 }
 
 // SendEmail - Send an email
-func (s *email) SendEmail(ctx context.Context, request operations.SendEmailRequest) (*operations.SendEmailResponse, error) {
+func (s *email) SendEmail(ctx context.Context, request shared.Email) (*operations.SendEmailResponse, error) {
 	baseURL := s.serverURL
 	url := strings.TrimSuffix(baseURL, "/") + "/email"
 
-	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request)
+	bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, "Request", "json")
 	if err != nil {
 		return nil, fmt.Errorf("error serializing request body: %w", err)
 	}

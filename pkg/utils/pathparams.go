@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GenerateURL(ctx context.Context, serverURL, path string, pathParams interface{}) string {
+func GenerateURL(ctx context.Context, serverURL, path string, pathParams interface{}, globals map[string]map[string]map[string]interface{}) string {
 	url := strings.TrimSuffix(serverURL, "/") + path
 
 	pathParamsStructType := reflect.TypeOf(pathParams)
@@ -19,10 +19,17 @@ func GenerateURL(ctx context.Context, serverURL, path string, pathParams interfa
 		fieldType := pathParamsStructType.Field(i)
 		valType := pathParamsValType.Field(i)
 
+		requestTag := getRequestTag(fieldType)
+		if requestTag != nil {
+			continue
+		}
+
 		ppTag := parseParamTag(pathParamTagKey, fieldType, "simple", false)
 		if ppTag == nil {
 			continue
 		}
+
+		valType = populateFromGlobals(fieldType, valType, "pathParam", globals)
 
 		// TODO: support other styles
 		switch ppTag.Style {

@@ -14,7 +14,6 @@ import (
 
 const (
 	requestTagKey       = "request"
-	requestFieldName    = "Request"
 	multipartFormTagKey = "multipartForm"
 	formTagKey          = "form"
 )
@@ -25,7 +24,7 @@ var (
 	urlEncodedEncodingRegex = regexp.MustCompile(`application\/x-www-form-urlencoded.*`)
 )
 
-func SerializeRequestBody(ctx context.Context, request interface{}) (*bytes.Buffer, string, error) {
+func SerializeRequestBody(ctx context.Context, request interface{}, requestFieldName string, serializationMethod string) (*bytes.Buffer, string, error) {
 	requestStructType := reflect.TypeOf(request)
 	requestValType := reflect.ValueOf(request)
 
@@ -38,54 +37,27 @@ func SerializeRequestBody(ctx context.Context, request interface{}) (*bytes.Buff
 		requestValType = requestValType.Elem()
 	}
 
+	if requestStructType.Kind() != reflect.Struct {
+		return serializeContentType(requestFieldName, SerializationMethodToContentType[serializationMethod], requestValType)
+	}
+
 	requestField, ok := requestStructType.FieldByName(requestFieldName)
-	if !ok {
-		return nil, "", fmt.Errorf("request body not found")
-	}
 
-	tag := getRequestTag(requestField)
-	if tag != nil {
-		// Single Request Object at First Level
-		requestVal := requestValType.FieldByName(requestFieldName)
-		if requestField.Type.Kind() == reflect.Pointer && requestVal.IsNil() {
-			return nil, "", nil
-		}
-
-		return serializeContentType(requestFieldName, tag.MediaType, requestVal)
-	}
-
-	// Multi Request Object at First Level
-	requestStructType = requestField.Type
-	requestValType = requestValType.FieldByName(requestFieldName)
-
-	if requestStructType.Kind() == reflect.Pointer {
-		if requestValType.IsNil() {
-			return nil, "", nil
-		}
-
-		requestStructType = requestStructType.Elem()
-		requestValType = requestValType.Elem()
-	}
-
-	for i := 0; i < requestStructType.NumField(); i++ {
-		fieldType := requestStructType.Field(i)
-		valType := requestValType.Field(i)
-
-		if fieldType.Type.Kind() == reflect.Pointer {
-			if valType.IsNil() {
-				continue
+	if ok {
+		tag := getRequestTag(requestField)
+		if tag != nil {
+			// request object (non-flattened)
+			requestVal := requestValType.FieldByName(requestFieldName)
+			if requestField.Type.Kind() == reflect.Pointer && requestVal.IsNil() {
+				return nil, "", nil
 			}
-		}
 
-		tag := getRequestTag(fieldType)
-		if tag == nil {
-			return nil, "", fmt.Errorf("missing request tag on request body field %s", fieldType.Name)
+			return serializeContentType(requestFieldName, tag.MediaType, requestVal)
 		}
-
-		return serializeContentType(fieldType.Name, tag.MediaType, valType)
 	}
 
-	return nil, "", nil
+	// flattened request object
+	return serializeContentType(requestFieldName, SerializationMethodToContentType[serializationMethod], requestValType)
 }
 
 func serializeContentType(fieldName string, mediaType string, val reflect.Value) (*bytes.Buffer, string, error) {

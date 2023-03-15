@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-func PopulateQueryParams(ctx context.Context, req *http.Request, queryParams interface{}) error {
+func PopulateQueryParams(ctx context.Context, req *http.Request, queryParams interface{}, globals map[string]map[string]map[string]interface{}) error {
 	queryParamsStructType := reflect.TypeOf(queryParams)
 	queryParamsValType := reflect.ValueOf(queryParams)
 
@@ -19,10 +19,17 @@ func PopulateQueryParams(ctx context.Context, req *http.Request, queryParams int
 		fieldType := queryParamsStructType.Field(i)
 		valType := queryParamsValType.Field(i)
 
+		requestTag := getRequestTag(fieldType)
+		if requestTag != nil {
+			continue
+		}
+
 		qpTag := parseQueryParamTag(fieldType)
 		if qpTag == nil {
 			continue
 		}
+
+		valType = populateFromGlobals(fieldType, valType, "queryParam", globals)
 
 		if qpTag.Serialization != "" {
 			vals, err := populateSerializedParams(req, qpTag, fieldType.Type, valType)

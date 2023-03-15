@@ -16,7 +16,16 @@ const (
 	pathParamTagKey   = "pathParam"
 )
 
-var paramRegex = regexp.MustCompile(`({.*?})`)
+var (
+	paramRegex                       = regexp.MustCompile(`({.*?})`)
+	SerializationMethodToContentType = map[string]string{
+		"json":      "application/json",
+		"form":      "application/x-www-form-urlencoded",
+		"multipart": "multipart/form-data",
+		"raw":       "application/octet-stream",
+		"string":    "text/plain",
+	}
+)
 
 func UnmarshalJsonFromResponseBody(body io.Reader, out interface{}) error {
 	data, err := io.ReadAll(body)
@@ -109,4 +118,23 @@ func valToString(val interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func populateFromGlobals(fieldType reflect.StructField, valType reflect.Value, paramType string, globals map[string]map[string]map[string]interface{}) reflect.Value {
+	if globals != nil && fieldType.Type.Kind() == reflect.Ptr {
+		parameters, ok := globals["parameters"]
+		if ok {
+			paramsOfType, ok := parameters[paramType]
+			if ok {
+				globalVal, ok := paramsOfType[fieldType.Name]
+				if ok {
+					if reflect.TypeOf(globalVal).Kind() == fieldType.Type.Elem().Kind() && valType.IsNil() {
+						valType = reflect.ValueOf(&globalVal)
+					}
+				}
+			}
+		}
+	}
+
+	return valType
 }
